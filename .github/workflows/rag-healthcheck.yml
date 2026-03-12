@@ -1,0 +1,58 @@
+name: RAG Healthcheck
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"
+
+concurrency:
+  group: rag-healthcheck
+  cancel-in-progress: true
+
+jobs:
+  check-rag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RAG_URL: ${{ secrets.WERISTO_RAG_URL }}
+      MASTER_KEY: ${{ secrets.WERISTO_MASTER_KEY }}
+    steps:
+      - name: Validate required secret
+        shell: bash
+        run: |
+          if [ -z "${MASTER_KEY}" ]; then
+            echo "Missing secret: WERISTO_MASTER_KEY"
+            exit 1
+          fi
+          if [ -z "${RAG_URL}" ]; then
+            RAG_URL="https://weristo.de/api/master/rag"
+          fi
+          echo "RAG_URL=${RAG_URL}" >> "$GITHUB_ENV"
+          echo "::add-mask::${MASTER_KEY}"
+
+      - name: Call RAG endpoint
+        shell: bash
+        run: |
+          RESPONSE="$(curl -fsS -H "x-master-key: ${MASTER_KEY}" "${RAG_URL}")"
+          export RESPONSE
+          python - <<'PY'
+          import json
+          import os
+          import sys
+
+          raw = os.environ.get("RESPONSE", "")
+          try:
+              payload = json.loads(raw)
+          except Exception as exc:
+              print(f"Invalid JSON response: {exc}")
+              sys.exit(1)
+
+          if payload.get("success") is not True:
+              print("Endpoint returned success=false")
+              sys.exit(1)
+
+          rag = payload.get("rag", {})
+          meta = rag.get("_meta", {})
+          updated = meta.get("updated", "unknown")
+          print(f"RAG check OK. Updated: {updated}")
+          PY
