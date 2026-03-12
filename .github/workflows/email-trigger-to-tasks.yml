@@ -1,0 +1,36 @@
+name: Email Trigger To Tasks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 * * * *"
+
+concurrency:
+  group: email-trigger-to-tasks
+  cancel-in-progress: true
+
+jobs:
+  poll-inbox-and-add-task:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GMAIL_IMAP_HOST: imap.gmail.com
+      GMAIL_IMAP_USER: ${{ secrets.GMAIL_IMAP_USER }}
+      GMAIL_IMAP_APP_PASSWORD: ${{ secrets.GMAIL_IMAP_APP_PASSWORD }}
+      TRIGGER_FROM_FILTER: ${{ secrets.TRIGGER_FROM_FILTER }}
+      WERISTO_API_BASE: https://weristo.de
+      WERISTO_MASTER_KEY: ${{ secrets.WERISTO_MASTER_KEY }}
+      TRIGGER_SCAN_LIMIT: "30"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run email trigger ingestion
+        shell: bash
+        run: |
+          python scripts/email_trigger_to_tasks.py

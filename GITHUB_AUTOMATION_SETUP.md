@@ -3,6 +3,7 @@
 Ez a projekt tartalmaz időzített workflow-kat:
 - `.github/workflows/rag-healthcheck.yml` -> 6 óránként + manuálisan
 - `.github/workflows/cad-ai-radar.yml` -> óránként + manuálisan
+- `.github/workflows/email-trigger-to-tasks.yml` -> óránként + manuálisan (email válasz -> TASKS)
 
 `cad-ai-radar` forrásai (ingyenes API-k/public feed):
 - arXiv API
@@ -42,6 +43,11 @@ Kötelező:
 - `RESEND_API_KEY` = Resend API kulcs (kimenő email)
 - `CAD_REPORT_TO` = `ottolokos@gmail.com`
 - `CAD_REPORT_FROM` = pl. `info@weristo.de` (Resendben hitelesített feladó)
+- `GMAIL_IMAP_USER` = figyelt Gmail cím (pl. `ottolokos@gmail.com`)
+- `GMAIL_IMAP_APP_PASSWORD` = Gmail App Password
+
+Opcionális:
+- `TRIGGER_FROM_FILTER` = csak ettől a feladótól figyeljen (pl. `ottolokos@gmail.com`)
 
 Opcionális:
 - `WERISTO_RAG_URL` = `https://weristo.de/api/master/rag`
@@ -55,7 +61,18 @@ Majd:
 
 Repo -> `Actions` -> `CAD AI SaaS Radar` -> `Run workflow`
 
+Majd:
+
+Repo -> `Actions` -> `Email Trigger To Tasks` -> `Run workflow`
+
 Ha zöld, kész. Innentől GitHub felhőben fut, a saját gépedtől függetlenül.
+
+## Email trigger minta
+
+Ha a figyelt mailboxba ilyen szöveg érkezik, automatikusan felveszi a fejlesztési listába:
+- `oksa ez egy jó funkció lenne nekünk, vedd fel fejlesztési tervbe`
+- `feature request: ...`
+- `backlog: ...`
 
 ## Biztonság
 
