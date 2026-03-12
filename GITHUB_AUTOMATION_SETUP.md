@@ -4,6 +4,12 @@ Ez a projekt tartalmaz időzített workflow-kat:
 - `.github/workflows/rag-healthcheck.yml` -> 6 óránként + manuálisan
 - `.github/workflows/cad-ai-radar.yml` -> óránként + manuálisan
 
+`cad-ai-radar` forrásai (ingyenes API-k/public feed):
+- arXiv API
+- GitHub Search API
+- HackerNews Algolia API
+- Reddit JSON search API
+
 ## 1) Projekt feltöltése GitHubra
 
 Ha még nincs git repo:

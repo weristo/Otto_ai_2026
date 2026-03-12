@@ -19,6 +19,14 @@ jobs:
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       TZ: Europe/Berlin
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Validate required secrets
         shell: bash
         run: |
@@ -30,131 +38,7 @@ jobs:
       - name: Build hourly report
         shell: bash
         run: |
-          python - <<'PY'
-          import datetime as dt
-          import html
-          import json
-          import re
-          import urllib.parse
-          import urllib.request
-          import xml.etree.ElementTree as ET
-
-          QUERIES = [
-              "AI CAD PDF drawing dimension extraction",
-              "hand sketch to CAD AI assembly",
-              "sheet metal auto DXF AI CAD",
-              "CAD copilot SaaS API",
-              "open source CAD automation STEP DXF",
-              "on-prem CAD AI deployment",
-          ]
-
-          KEYWORDS = {
-              "pdf_sketch_vision": ["pdf", "drawing", "sketch", "vision", "ocr", "image"],
-              "dimension_extraction": ["dimension", "measure", "extract", "tolerance"],
-              "asm_generation": ["assembly", "asm", "step", "part", "bom"],
-              "sheetmetal_dxf": ["sheet metal", "dxf", "flatten", "nesting"],
-              "saas_web": ["saas", "web", "cloud", "api"],
-              "onprem_pc": ["on-prem", "on prem", "self-host", "desktop", "windows"],
-              "open_source": ["open source", "github", "oss", "apache", "mit"],
-          }
-
-          def fetch_rss(query: str):
-              q = urllib.parse.quote(query)
-              url = f"https://news.google.com/rss/search?q={q}"
-              req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-              with urllib.request.urlopen(req, timeout=20) as resp:
-                  data = resp.read()
-              root = ET.fromstring(data)
-              out = []
-              for item in root.findall("./channel/item"):
-                  title = (item.findtext("title") or "").strip()
-                  link = (item.findtext("link") or "").strip()
-                  pub = (item.findtext("pubDate") or "").strip()
-                  src = item.findtext("./source") or "Unknown"
-                  out.append({"title": title, "url": link, "published": pub, "source": src, "query": query})
-              return out
-
-          def score(item):
-              text = f"{item.get('title','')} {item.get('query','')}".lower()
-              points = 0
-              flags = {}
-              for label, kws in KEYWORDS.items():
-                  hit = any(k in text for k in kws)
-                  flags[label] = hit
-                  if hit:
-                      points += 1
-              # Prioritize core project fit.
-              core = flags["pdf_sketch_vision"] + flags["dimension_extraction"] + flags["asm_generation"] + flags["sheetmetal_dxf"]
-              points += core * 2
-              item["score"] = points
-              item["flags"] = flags
-              return item
-
-          all_items = []
-          for q in QUERIES:
-              try:
-                  all_items.extend(fetch_rss(q)[:12])
-              except Exception:
-                  continue
-
-          seen = set()
-          dedup = []
-          for it in all_items:
-              key = it["url"]
-              if key and key not in seen:
-                  seen.add(key)
-                  dedup.append(score(it))
-
-          dedup.sort(key=lambda x: x.get("score", 0), reverse=True)
-          top = dedup[:15]
-
-          now = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
-
-          rows = []
-          for i, it in enumerate(top, 1):
-              title = html.escape(it["title"])
-              url = html.escape(it["url"])
-              source = html.escape(it.get("source", "Unknown"))
-              pub = html.escape(it.get("published", ""))
-              score_txt = str(it.get("score", 0))
-              tags = [k for k, v in it.get("flags", {}).items() if v]
-              tags_txt = ", ".join(tags[:5]) if tags else "-"
-              rows.append(
-                  f"<tr>"
-                  f"<td>{i}</td>"
-                  f"<td><a href='{url}'>{title}</a></td>"
-                  f"<td>{source}</td>"
-                  f"<td>{pub}</td>"
-                  f"<td>{score_txt}</td>"
-                  f"<td>{html.escape(tags_txt)}</td>"
-                  f"</tr>"
-              )
-
-          body = f"""
-          <h2>CAD AI SaaS Radar — Orankenti jelentes</h2>
-          <p><b>Futas:</b> {now} (Europe/Berlin)</p>
-          <p><b>Cel:</b> webes + SaaS licencelheto, opcionalis PC/on-prem telepites; PDF/skicc ertelmezes, meret-kinyeres, ASM/alkatresz, lemez->DXF.</p>
-          <table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px;">
-            <thead>
-              <tr><th>#</th><th>Talalat</th><th>Forras</th><th>Datum</th><th>Fit score</th><th>Cimkek</th></tr>
-            </thead>
-            <tbody>
-              {''.join(rows) if rows else '<tr><td colspan="6">Nincs uj talalat.</td></tr>'}
-            </tbody>
-          </table>
-          <p><b>Javasolt kovetkezo lepes:</b> Top 3 talalatbol PoC matrix (API, ar, licenc, on-prem opcio, DXF/ASM tamogatas).</p>
-          """
-
-          with open("cad_report_payload.json", "w", encoding="utf-8") as f:
-              json.dump(
-                  {
-                      "subject": f"CAD AI SaaS Radar — orankenti riport ({now})",
-                      "html": body,
-                  },
-                  f,
-                  ensure_ascii=False,
-              )
-          PY
+          python scripts/cad_ai_radar.py --output cad_report_payload.json --limit 20
 
       - name: Send email via Resend
         shell: bash
