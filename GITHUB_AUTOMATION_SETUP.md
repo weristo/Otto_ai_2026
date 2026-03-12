@@ -1,8 +1,8 @@
 # GitHub automatizálás (felhőben, géptől függetlenül)
 
-Ez a projekt tartalmaz egy időzített workflow-t:
-- Fájl: `.github/workflows/rag-healthcheck.yml`
-- Futás: 6 óránként + manuálisan a GitHub UI-ból
+Ez a projekt tartalmaz időzített workflow-kat:
+- `.github/workflows/rag-healthcheck.yml` -> 6 óránként + manuálisan
+- `.github/workflows/cad-ai-radar.yml` -> óránként + manuálisan
 
 ## 1) Projekt feltöltése GitHubra
 
@@ -33,6 +33,9 @@ Repo -> `Settings` -> `Secrets and variables` -> `Actions` -> `New repository se
 
 Kötelező:
 - `WERISTO_MASTER_KEY` = az aktuális master kulcs
+- `RESEND_API_KEY` = Resend API kulcs (kimenő email)
+- `CAD_REPORT_TO` = `ottolokos@gmail.com`
+- `CAD_REPORT_FROM` = pl. `info@weristo.de` (Resendben hitelesített feladó)
 
 Opcionális:
 - `WERISTO_RAG_URL` = `https://weristo.de/api/master/rag`
@@ -41,6 +44,10 @@ Opcionális:
 ## 3) Első futtatás
 
 Repo -> `Actions` -> `RAG Healthcheck` -> `Run workflow`
+
+Majd:
+
+Repo -> `Actions` -> `CAD AI SaaS Radar` -> `Run workflow`
 
 Ha zöld, kész. Innentől GitHub felhőben fut, a saját gépedtől függetlenül.
 
