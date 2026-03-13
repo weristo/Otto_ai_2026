@@ -468,7 +468,7 @@ def main() -> int:
     text_body = build_text_summary(now_local, top, stats, insights)
 
     payload = {
-        "subject": f"CAD AI SaaS Radar - magyar kutatási riport ({now_local})",
+        "subject": f"[OK] CAD AI SaaS Radar - magyar kutatási riport ({now_local})",
         "html": html_body,
         "text": text_body,
         "meta": {

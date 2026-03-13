@@ -3,6 +3,7 @@ name: CAD AI SaaS Radar
 on:
   workflow_dispatch:
   schedule:
+    # Every hour at minute 00 (Berlin local time is always :00 as well).
     - cron: "0 * * * *"
 
 concurrency:
@@ -70,7 +71,7 @@ jobs:
               "<p>A részletek a GitHub Actions logban vannak, de a jelzés emailben is megérkezett.</p>"
           )
           payload = {
-              "subject": f"CAD AI SaaS Radar - HIBA ({now})",
+              "subject": f"[HIBA] CAD AI SaaS Radar ({now})",
               "html": html,
               "text": text,
               "meta": {"failed_requests": -1, "reason": "build_report_step_failed"},
