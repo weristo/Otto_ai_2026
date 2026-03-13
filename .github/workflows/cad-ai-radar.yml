@@ -37,17 +37,51 @@ jobs:
           echo "::add-mask::${RESEND_API_KEY}"
 
       - name: Build research report
+        id: build_report
+        continue-on-error: true
         shell: bash
         run: |
           python scripts/cad_ai_radar.py --output cad_report_payload.json --limit 20 --per-source-limit 6
           python - <<'PY'
           import json
           with open("cad_report_payload.json", "r", encoding="utf-8") as f:
-              payload = json.load(f)
+          payload = json.load(f)
           print("REPORT_META:", json.dumps(payload.get("meta", {}), ensure_ascii=False))
           PY
 
+      - name: Build fallback error payload
+        if: ${{ steps.build_report.outcome == 'failure' }}
+        shell: bash
+        run: |
+          python - <<'PY'
+          import datetime as dt
+          import json
+          now = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
+          text = (
+              "CAD AI SaaS Radar - HIBA\n"
+              f"Futás ideje: {now} (Europe/Berlin)\n"
+              "A kutatási folyamat hibára futott, ezért automatikus hibariportot kapsz.\n"
+              "A részletek a GitHub Actions logban vannak, de itt a jelzés emailben is megérkezett."
+          )
+          html = (
+              f"<h2>CAD AI SaaS Radar - HIBA</h2>"
+              f"<p><b>Futás ideje:</b> {now} (Europe/Berlin)</p>"
+              "<p>A kutatási folyamat hibára futott, ezért ez egy automatikus hibariport.</p>"
+              "<p>A részletek a GitHub Actions logban vannak, de a jelzés emailben is megérkezett.</p>"
+          )
+          payload = {
+              "subject": f"CAD AI SaaS Radar - HIBA ({now})",
+              "html": html,
+              "text": text,
+              "meta": {"failed_requests": -1, "reason": "build_report_step_failed"},
+          }
+          with open("cad_report_payload.json", "w", encoding="utf-8") as f:
+              json.dump(payload, f, ensure_ascii=False, indent=2)
+          print("Fallback payload generated.")
+          PY
+
       - name: Upload report artifact
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: cad-report-payload
@@ -55,6 +89,7 @@ jobs:
           if-no-files-found: error
 
       - name: Send email via Resend
+        if: ${{ always() }}
         shell: bash
         run: |
           python - <<'PY'
@@ -70,6 +105,7 @@ jobs:
               "to": [os.environ["REPORT_TO"]],
               "subject": payload["subject"],
               "html": payload["html"],
+              "text": payload.get("text", ""),
           }
           raw = json.dumps(data).encode("utf-8")
           req = urllib.request.Request(

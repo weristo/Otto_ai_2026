@@ -287,6 +287,36 @@ def summarize_findings(top_items: List[dict], stats: dict) -> List[str]:
     ]
 
 
+def build_text_summary(now_local: str, top_items: List[dict], stats: dict, insights: List[str]) -> str:
+    lines = [
+        "CAD AI SaaS Radar - magyar kutatási összefoglaló",
+        f"Futás ideje: {now_local} (Europe/Berlin)",
+        f"Lekérdezések: {stats['queries']}",
+        f"Forráskérések: {stats['total_requests']} | sikeres: {stats['successful_requests']} | hibás: {stats['failed_requests']}",
+        "",
+        "Fő megállapítások:",
+    ]
+    for insight in insights:
+        lines.append(f"- {insight}")
+
+    lines.append("")
+    lines.append("Top találatok:")
+    if not top_items:
+        lines.append("- Nincs új találat ebben a futásban.")
+    else:
+        for i, item in enumerate(top_items[:8], 1):
+            lines.append(f"- {i}. {item.get('title', '')} | {item.get('source', '')} | score: {item.get('score', 0)}")
+            lines.append(f"  {item.get('url', '')}")
+
+    if stats["errors"]:
+        lines.append("")
+        lines.append("Forráshibák (első 8):")
+        for err in stats["errors"][:8]:
+            lines.append(f"- {err['source']} | {err['query']} | {err['error']}")
+
+    return "\n".join(lines)
+
+
 def render_html(now_local: str, top_items: List[dict], matrix: List[dict], stats: dict, insights: List[str]) -> str:
     rows = []
     for i, it in enumerate(top_items, 1):
@@ -435,10 +465,12 @@ def main() -> int:
     matrix = build_free_api_matrix()
     insights = summarize_findings(top, stats)
     html_body = render_html(now_local, top, matrix, stats, insights)
+    text_body = build_text_summary(now_local, top, stats, insights)
 
     payload = {
         "subject": f"CAD AI SaaS Radar - magyar kutatási riport ({now_local})",
         "html": html_body,
+        "text": text_body,
         "meta": {
             "top_count": len(top),
             "total_seen": len(ranked),
