@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: email-trigger-to-tasks
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   poll-inbox-and-add-task:

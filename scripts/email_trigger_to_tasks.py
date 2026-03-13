@@ -15,8 +15,8 @@ TRIGGER_PATTERNS = [
     r"\boksa\b",
     r"\bjó funkció\b",
     r"\bjo funkcio\b",
-    r"\bvedd fel fejleszt[ée]si tervbe\b",
-    r"\bfejleszt[ée]si tervbe\b",
+    r"\bvedd fel fejleszt[eé]si tervbe\b",
+    r"\bfejleszt[eé]si tervbe\b",
     r"\bbacklog\b",
     r"\bfeature request\b",
 ]
@@ -161,8 +161,8 @@ def main():
 
         snippet = re.sub(r"\s+", " ", body or "").strip()[:240]
         task = (
-            f"{marker} Email-triggerelt fejlesztési ötlet: "
-            f"\"{subject or 'nincs tárgy'}\" | feladó: {frm} | dátum: {dt_txt} | kivonat: {snippet}"
+            f'{marker} Email-triggerelt fejlesztési ötlet: '
+            f'"{subject or "nincs tárgy"}" | feladó: {frm} | dátum: {dt_txt} | kivonat: {snippet}'
         )
         res = api_post(
             f"{api_base}/api/master/tasks/add",

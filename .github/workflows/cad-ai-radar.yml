@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: cad-ai-radar
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   scan-and-email:
@@ -18,6 +18,7 @@ jobs:
       REPORT_FROM: ${{ secrets.CAD_REPORT_FROM }}
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       TZ: Europe/Berlin
+      PYTHONUTF8: "1"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,10 +36,23 @@ jobs:
           [ -n "${REPORT_FROM}" ] || { echo "Missing secret: CAD_REPORT_FROM"; exit 1; }
           echo "::add-mask::${RESEND_API_KEY}"
 
-      - name: Build hourly report
+      - name: Build research report
         shell: bash
         run: |
-          python scripts/cad_ai_radar.py --output cad_report_payload.json --limit 20
+          python scripts/cad_ai_radar.py --output cad_report_payload.json --limit 20 --per-source-limit 6
+          python - <<'PY'
+          import json
+          with open("cad_report_payload.json", "r", encoding="utf-8") as f:
+              payload = json.load(f)
+          print("REPORT_META:", json.dumps(payload.get("meta", {}), ensure_ascii=False))
+          PY
+
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cad-report-payload
+          path: cad_report_payload.json
+          if-no-files-found: error
 
       - name: Send email via Resend
         shell: bash
