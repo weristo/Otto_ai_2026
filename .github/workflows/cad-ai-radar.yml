@@ -2,9 +2,6 @@ name: CAD AI SaaS Radar
 
 on:
   workflow_dispatch:
-  schedule:
-    # Every hour at minute 00 (Berlin local time is always :00 as well).
-    - cron: "0 * * * *"
 
 concurrency:
   group: cad-ai-radar
